@@ -26,10 +26,17 @@ function RenderDish(props) {
   const dish = props.dish;
 
   // PANRESPONDER FOR GESTURE
-  handleViewRef = ref => this.view = ref;
+  var viewRef;
+  const handleViewRef = ref => viewRef = ref;
 
   const recognizeDrag = ({ moveX, moveY, dx, dy }) => {
     if (dx < -200)
+      return true;
+    else
+      return false;
+  }
+  const recognizeComment = ({ moveX, moveY, dx, dy }) => {
+    if (dx > 200)
       return true;
     else
       return false;
@@ -40,7 +47,7 @@ function RenderDish(props) {
     },
     // For the Rubberband effect on the card bcoz of our gesture.
     onPanResponderGrant: () => {
-      this.view.rubberBand(1000)
+      viewRef.rubberBand(1000)
         .then(endState => console.log(endState.finished ? 'finished' : 'cancelled'));
     },
     onPanResponderEnd: (e, gestureState) => {
@@ -55,6 +62,8 @@ function RenderDish(props) {
           ],
           { cancelable: false }
         );
+      else if (recognizeComment(gestureState))
+        props.toggle();
 
       return true;
     }
@@ -64,7 +73,7 @@ function RenderDish(props) {
   if (dish != null) {
     return (
       <Animatable.View animation="fadeInDown" duration={2000} delay={1000}
-        ref={this.handleViewRef}
+        ref={handleViewRef}
         {...panResponder.panHandlers}>
         <Card
           featuredTitle={dish.name}
@@ -153,6 +162,7 @@ class Dishdetail extends Component {
     this.props.postComment(dishId, rating, author, comment);
     this.toggleModal();
   }
+
 
   static navigationOptions = {
     title: "Dish Details",
