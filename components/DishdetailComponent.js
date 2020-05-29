@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { StyleSheet, Text, View, ScrollView, FlatList, Modal, Button, Alert, PanResponder } from "react-native";
+import { StyleSheet, Text, View, ScrollView, FlatList, Modal, Button, Alert, PanResponder, Share } from "react-native";
 import { Rating, AirbnbRating, Card, Icon, Input } from "react-native-elements";
 import { DISHES } from "../shared/dishes";
 import { COMMENTS } from "../shared/comments";
@@ -70,6 +70,17 @@ function RenderDish(props) {
   })
   // PANRESPONDER  (for gesture) FUNCTIONS DONE
 
+  // FOR SHARING VIA ANY APP (SHARE API FROM REACT NATIVE)
+  const shareDish = (title, message, url) => {
+    Share.share({
+      title: title,
+      message: title + ': ' + message + ' ' + url,
+      url: url
+    }, {
+      dialogTitle: 'Share ' + title
+    })
+  }
+
   if (dish != null) {
     return (
       <Animatable.View animation="fadeInDown" duration={2000} delay={1000}
@@ -100,6 +111,16 @@ function RenderDish(props) {
                 color='#512DA8'
                 onPress={() => props.toggle()}
               />
+            </View>
+            <View style={{ flex: 1, alignItems: "flex-start" }}>
+              <Icon
+                raised
+                reverse
+                name='share'
+                type='font-awesome'
+                color='#51D2A8'
+                style={styles.cardItem}
+                onPress={() => shareDish(dish.name, dish.description, baseUrl + dish.image)} />
             </View>
           </View>
         </Card>

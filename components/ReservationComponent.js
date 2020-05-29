@@ -3,7 +3,11 @@ import { ScrollView, Text, View, StyleSheet, Picker, Switch, Button, Modal, Aler
 import { Card } from 'react-native-elements';
 import DatePicker from 'react-native-datepicker';
 import * as Animatable from 'react-native-animatable';
-
+// For the notifications
+import * as Permissions from 'expo-permissions';
+import { Notifications } from 'expo';
+//import { Permissions, Notifications } from 'expo';
+import * as Calendar from 'expo-calendar';
 
 class Reservation extends Component {
 
@@ -28,7 +32,30 @@ class Reservation extends Component {
 
     handleReservation() {
         console.log(JSON.stringify(this.state));
-        this.toggleModal();
+        //this.toggleModal();
+
+        Alert.alert(
+            'Your Reservation OK?',
+            'Number of Guests: ' + `${this.state.guests}` + '\nSmoking? ' + `${this.state.smoking}` + '\nDate and Time:' + `${this.state.date}`,
+            [
+                {
+                    text: 'Cancel',
+                    onPress: () => this.resetForm(),
+                    style: ' cancel'
+                },
+                {
+                    text: 'OK',
+                    onPress: () => {
+                        this.presentLocalNotification(this.state.date)
+                        this.addReservationToCalendar(this.state.date);
+                        this.resetForm()
+                    }
+                }
+            ],
+            { cancelable: false }
+        );
+
+
     }
     resetForm() {
         this.setState({
@@ -36,6 +63,83 @@ class Reservation extends Component {
             smoking: false,
             date: '',
             showModal: false
+        });
+    }
+
+    // Calendar Notifications // Easy
+    async obtainCalendarPermission() {
+        let permission = await Permissions.getAsync(Permissions.CALENDAR);
+        if (permission.status !== 'granted') {
+            permission = await Permissions.askAsync(Permissions.CALENDAR);
+            if (permission.status !== 'granted') {
+                Alert.alert('You not granted permission to access calendar');
+            }
+        }
+        return permission;
+    }
+    // Add the reservation to calender
+    addReservationToCalendar = async (date) => {
+        await this.obtainCalendarPermission();
+
+        let startDate = new Date(Date.parse(date));
+        console.log(startDate);
+        //let endDate = startDate.setHours(startDate.getHours() + 2);
+        let endDate = new Date(Date.parse(date) + (2 * 60 * 60 * 1000))
+        console.log(endDate);
+
+        const cals = await Calendar.getCalendarsAsync();
+        const defaultCals = cals.filter(each => each.allowsModifications == true);
+        const defaultCal = defaultCals[0].source;
+
+        //syntax is Calendar.createEventAsync(DefaultCalender,{properties})
+        // if I give the above obtained default calendar as input, the
+        // APP crashes, hence not given.
+        Calendar.createEventAsync({
+            title: 'Con Fusion Table Reservation',
+            startDate: startDate,
+            endDate: endDate,
+            location: '121, Clear Water Bay Road, Clear Water Bay, Kowloon, Hong Kong',
+            timeZone: 'Asia/Hong_Kong'
+        });
+    }
+
+
+
+    // Notification's permission
+    async obtainNotificationPermission() {
+        let permission = await Permissions.getAsync(Permissions.USER_FACING_NOTIFICATIONS);
+        if (permission.status !== 'granted') {
+            permission = await Permissions.askAsync(Permissions.USER_FACING_NOTIFICATIONS);
+            if (permission.status !== 'granted') {
+                Alert.alert('Permission not granted to show notifications');
+            }
+        } else {
+            if (Platform.OS === 'android') {
+                Notifications.createChannelAndroidAsync('notify', {
+                    name: 'notify',
+                    sound: true,
+                    vibrate: true,
+                });
+            }
+        }
+        return permission;
+    }
+
+
+    async presentLocalNotification(date) {
+        await this.obtainNotificationPermission();
+        Notifications.presentLocalNotificationAsync({
+            title: 'Your Reservation',
+            body: 'Reservation for ' + date + ' requested',
+            ios: {
+                sound: true
+            },
+            android: {
+                "channelId": "notify",
+                sound: true,
+                vibrate: true,
+                color: '#512DA8'
+            }
         });
     }
 
@@ -95,29 +199,10 @@ class Reservation extends Component {
                     </View>
                     <View style={styles.formRow}>
                         <Button
-                            // onPress={() => this.handleReservation()}
+                            onPress={() => this.handleReservation()}
                             title="Reserve"
                             color="#512DA8"
                             accessibilityLabel="Learn more about this purple button"
-                            onPress={() => {
-                                Alert.alert(
-                                    'Your Reservation OK?',
-                                    'Number of Guests: ' + `${this.state.guests}` + '\nSmoking? ' + `${this.state.smoking}` + '\nDate and Time:' + `${this.state.date}`,
-                                    [
-                                        {
-                                            text: 'Cancel',
-                                            onPress: () => this.resetForm(),
-                                            style: ' cancel'
-                                        },
-                                        {
-                                            text: 'OK',
-                                            onPress: () => this.resetForm()
-                                        }
-                                    ],
-                                    { cancelable: false }
-                                );
-
-                            }}
                         />
                     </View>
                 </Animatable.View>
